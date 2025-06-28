@@ -47,6 +47,7 @@ object Application {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3)
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE)
+        glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE)
 
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE)
 
@@ -55,6 +56,9 @@ object Application {
         glfwSwapInterval(1)
 
         GL.createCapabilities()
+        enable(GL_FRAMEBUFFER_SRGB)
+        enable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         NodeLogger.log("Getting initial window size and density...")
         // Set initial density and size
@@ -214,18 +218,12 @@ object Application {
 
         bindFramebuffer(GL_FRAMEBUFFER, composeFbo.fboId)
 
-        // Enable blending for proper text and transparency rendering
-        enable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-
         log("Clearing surface canvas")
         surface.canvas.clear(Color.WHITE)
         log("Rendering composeScene to surface canvas (to fbo)")
         composeScene.render(surface.canvas.asComposeCanvas(), System.nanoTime())
         log("Flushing context")
         context.flush()
-
-        disable(GL_BLEND)
 
         // Now, render that FBO's texture to the screen
         // Bind to default frambuffer
