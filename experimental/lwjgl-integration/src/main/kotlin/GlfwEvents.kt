@@ -14,10 +14,10 @@ import java.awt.event.MouseWheelEvent
 import java.awt.event.KeyEvent as AwtKeyEvent
 
 @OptIn(InternalComposeUiApi::class)
-fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long) {
+fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long, densityProvider: () -> Float) {
     glfwSetMouseButtonCallback(windowHandle) { _, button, action, mods ->
         sendPointerEvent(
-            position = glfwGetCursorPos(windowHandle),
+            position = glfwGetCursorPos(windowHandle, densityProvider()),
             eventType = when (action) {
                 GLFW_PRESS -> PointerEventType.Press
                 GLFW_RELEASE -> PointerEventType.Release
@@ -28,8 +28,9 @@ fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long) {
     }
 
     glfwSetCursorPosCallback(windowHandle) { _, xpos, ypos ->
+        val density = densityProvider()
         sendPointerEvent(
-            position = Offset(xpos.toFloat(), ypos.toFloat()),
+            position = Offset(xpos.toFloat() * density, ypos.toFloat() * density),
             eventType = PointerEventType.Move,
             nativeEvent = MouseEvent(getAwtMods(windowHandle))
         )
@@ -37,7 +38,7 @@ fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long) {
 
     glfwSetCursorEnterCallback(windowHandle) { _, entered ->
         sendPointerEvent(
-            position = glfwGetCursorPos(windowHandle),
+            position = glfwGetCursorPos(windowHandle, densityProvider()),
             eventType = if (entered) PointerEventType.Enter else PointerEventType.Exit,
             nativeEvent = MouseEvent(getAwtMods(windowHandle))
         )
@@ -46,7 +47,7 @@ fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long) {
     glfwSetScrollCallback(windowHandle) { _, xoffset, yoffset ->
         sendPointerEvent(
             eventType = PointerEventType.Scroll,
-            position = glfwGetCursorPos(windowHandle),
+            position = glfwGetCursorPos(windowHandle, densityProvider()),
             scrollDelta = Offset(xoffset.toFloat(), -yoffset.toFloat()),
             nativeEvent = MouseWheelEvent(getAwtMods(windowHandle))
         )
@@ -91,17 +92,13 @@ fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long) {
             )
         }
     }
-
-    glfwSetWindowContentScaleCallback(windowHandle) { _, xscale, _ ->
-        density = Density(xscale)
-    }
 }
 
-private fun glfwGetCursorPos(window: Long): Offset {
+private fun glfwGetCursorPos(window: Long, density: Float): Offset {
     val x = DoubleArray(1)
     val y = DoubleArray(1)
     glfwGetCursorPos(window, x, y)
-    return Offset(x[0].toFloat(), y[0].toFloat())
+    return Offset(x[0].toFloat() * density, y[0].toFloat() * density)
 }
 
 // in the future versions of Compose we plan to get rid of the need of AWT events/components
