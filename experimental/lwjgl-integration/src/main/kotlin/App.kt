@@ -68,12 +68,18 @@ fun App() {
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color.Blue.copy(0.1f)).border(5.dp, Color.Green).padding(8.dp), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Blue.copy(0.3f))
+            .padding(8.dp), contentAlignment = Alignment.Center
+    ) {
         val shape = RoundedCornerShape(16.dp)
          Box(
              Modifier
                  .rotate(animatedRotation)
                  .size(200.dp)
+                 .shadow(10.dp, shape)
                  .background(Color.Red, shape)
                  .border(8.dp, Color.Blue, shape)
              ,
@@ -90,9 +96,7 @@ fun App1() {
         var text by remember { mutableStateOf("Text") }
         val listState = rememberLazyListState()
 
-        Column(Modifier.width(400.dp).graphicsLayer {
-            this.renderEffect = BlurEffect(10f, 10f, TileMode.Clamp)
-        }) {
+        Column(Modifier.width(400.dp)) {
             TextField(text, { text = it }, modifier = Modifier.fillMaxWidth())
             Button({}) {
                 Text("Hello!")

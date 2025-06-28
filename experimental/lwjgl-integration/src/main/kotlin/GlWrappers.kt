@@ -40,3 +40,8 @@ fun disable(target: Int) {
     NodeLogger.log("glDisable($target)")
     glDisable(target)
 }
+
+fun activeTexture(texture: Int) {
+    NodeLogger.log("glActiveTexture($texture)")
+    glActiveTexture(texture)
+}

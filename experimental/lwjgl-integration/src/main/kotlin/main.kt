@@ -160,11 +160,7 @@ object Application {
         composeScene.subscribeToGLFWEvents(windowHandle) { density.density }
         NodeLogger.log("Setting composeScene content")
         composeScene.setContent {
-            RootContainer(
-//                windowInfo = windowInfo
-            ) {
-                App()
-            }
+            App()
         }
         NodeLogger.log("Showing window!")
         glfwShowWindow(windowHandle)
@@ -209,36 +205,42 @@ object Application {
         surface: Surface,
         context: DirectContext,
         shaderProgram: Int,
-    ): Unit = NodeLogger.withGroup("render") {
-        log("render(surface=$surface, context=$context, shaderProgram=$shaderProgram)")
+    ): Unit = NodeLogger.withGroup("render(surface=$surface, context=$context, shaderProgram=$shaderProgram)") {
+        log("")
         renderCount++
         if(renderCount % 100 == 0) {
             log("[${renderCount}] Rendering x100")
         }
 
+        // --- 1. Bind our main FBO and prepare the GL state ---
         bindFramebuffer(GL_FRAMEBUFFER, composeFbo.fboId)
+        glClearColor(1f, 1f, 1f, 1f)
+        glClearStencil(0)
+        glClear(GL_COLOR_BUFFER_BIT or GL_STENCIL_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
 
-        log("Clearing surface canvas")
+        // --- 2. Tell Skia to reset its internal state cache ---
+        // This is the definitive fix. It forces Skia to re-sync with the
+        // OpenGL state you just set up, ensuring its text rendering
+        // pipeline doesn't use stale, cached information.
+        context.resetGL(GLBackendState.TEXTURE_BINDING)
+
+        // --- 3. Render Compose UI via Skia ---
         surface.canvas.clear(Color.WHITE)
-        log("Rendering composeScene to surface canvas (to fbo)")
         composeScene.render(surface.canvas.asComposeCanvas(), System.nanoTime())
-        log("Flushing context")
         context.flush()
 
-        // Now, render that FBO's texture to the screen
-        // Bind to default frambuffer
+        // --- 4. Render the FBO's texture to the screen ---
         bindFramebuffer(GL_FRAMEBUFFER, 0)
-
         useProgram(shaderProgram)
         bindVertexArray(composeFbo.quadVaoId)
+        glActiveTexture(GL_TEXTURE0)
         bindTexture(GL_TEXTURE_2D, composeFbo.colorTextureId)
-        log("Drawing texture")
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0)
+
+        // --- 5. Clean up state ---
         bindVertexArray(0)
         useProgram(0)
 
-        // Swap buffers to display the rendered frame
-        log("Swapping buffers")
         glfwSwapBuffers(windowHandle)
     }
 
