@@ -1,4 +1,3 @@
-import org.jetbrains.compose.compose
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
@@ -26,6 +25,10 @@ val lwjglNatives = "natives-macos-arm64"
 
 dependencies {
     implementation(compose.desktop.currentOs)
+
+    val collectionVersion = "1.5.0"
+    implementation("androidx.collection:collection:$collectionVersion")
+
     implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))
 
     implementation("org.lwjgl", "lwjgl")

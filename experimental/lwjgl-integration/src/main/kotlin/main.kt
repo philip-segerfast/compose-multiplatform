@@ -15,7 +15,6 @@ import org.lwjgl.opengl.GL33C.*
 import org.lwjgl.system.MemoryStack
 import org.lwjgl.system.MemoryUtil.NULL
 import kotlin.system.exitProcess
-import kotlin.use
 
 fun main() {
     System.setProperty("skiko.macos.opengl.enabled", "true")
@@ -33,7 +32,6 @@ object Application {
     var windowWidth = 640
     var windowHeight = 480
     var density: Density = Density(1f)
-//    val windowInfo: WindowInfo = GlfwWindowInfoImpl()
 
     fun start() {
         NodeLogger.group("start()")
@@ -48,7 +46,6 @@ object Application {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3)
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE)
         glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE)
-
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE)
 
         windowHandle = glfwCreateWindow(windowWidth, windowHeight, "Compose LWJGL Demo", NULL, NULL)
@@ -267,56 +264,3 @@ object Application {
             ?: error("Failed to create surface!")
     }
 }
-
-//internal class GlfwWindowInfoImpl : WindowInfo {
-//    private val _containerSize = mutableStateOf(IntSize.Zero)
-//
-//    override var isWindowFocused: Boolean by mutableStateOf(false)
-//
-//    override var keyboardModifiers: PointerKeyboardModifiers
-//        get() = GlobalKeyboardModifiers.value
-//        set(value) {
-//            GlobalKeyboardModifiers.value = value
-//        }
-//
-//    override var containerSize: IntSize
-//        get() = _containerSize.value
-//        set(value) {
-//            _containerSize.value = value
-//        }
-//
-//    companion object {
-//        // One instance across all windows makes sense, since the state of KeyboardModifiers is
-//        // common for all windows.
-//        internal val GlobalKeyboardModifiers = mutableStateOf(EmptyPointerKeyboardModifiers())
-//    }
-//}
-
-//@OptIn(InternalComposeUiApi::class)
-//class GlfwPlatformContext : PlatformContext {
-//    override val windowInfo: WindowInfo = GlfwWindowInfoImpl()
-//
-//    // Todo - override in Minecraft
-//    override val screenReader: PlatformScreenReader = object : PlatformScreenReader {
-//        override val isActive: Boolean = false
-//    }
-//
-//    override val inputModeManager: InputModeManager = object : InputModeManager {
-//        // Only keyboard is supported
-//        override val inputMode: InputMode = InputMode.Keyboard
-//
-//        override fun requestInputMode(inputMode: InputMode): Boolean {
-//            return inputMode == InputMode.Keyboard
-//        }
-//    }
-//
-//
-//
-//}
-
-
-
-
-
-
-

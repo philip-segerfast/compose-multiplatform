@@ -1,35 +1,25 @@
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.VerticalScrollbar
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RenderEffect
-import androidx.compose.ui.graphics.TileMode
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.platform.WindowInfo
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.delay
@@ -72,7 +62,26 @@ fun App() {
         Modifier
             .fillMaxSize()
             .background(Color.Blue.copy(0.3f))
-            .padding(8.dp), contentAlignment = Alignment.Center
+//            .border(5.dp, Color.Green)
+            .padding(8.dp)
+            .focusable()
+            .onKeyEvent { event ->
+                when(event.key) {
+                    Key.DirectionLeft -> {
+                        println("LEFT")
+                        rotationTarget -= 1
+                        true
+                    }
+                    Key.DirectionRight -> {
+                        println("RIGHT")
+                        rotationTarget += 1
+                        true
+                    }
+                    else -> false
+                }
+            }
+        ,
+        contentAlignment = Alignment.Center
     ) {
         val shape = RoundedCornerShape(16.dp)
          Box(
@@ -118,9 +127,10 @@ fun App1() {
 
 @Composable
 fun RootContainer(
-//    windowInfo: WindowInfo,
+    modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    // Todo - this is a temporary fix. Adding a border fixes graphics glitch
     val windowInfo = LocalWindowInfo.current
     val containerSize = windowInfo.containerSize
     val windowFocused = windowInfo.isWindowFocused
@@ -132,12 +142,13 @@ fun RootContainer(
         NodeLogger.popGroup()
     }
 
-//    CompositionLocalProvider(LocalWindowInfo provides windowInfo) {
-//        content()
-//    }
-
-    content()
-
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .border(Dp.Hairline, Color.White.copy(0.01f))
+    ) {
+        content()
+    }
 }
 
 
