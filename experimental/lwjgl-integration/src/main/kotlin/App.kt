@@ -1,33 +1,29 @@
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.VerticalScrollbar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollbarAdapter
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
 import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.DelicateCoroutinesApi
 
-@OptIn(DelicateCoroutinesApi::class)
+/**
+ * Demo composable with continuously rotating rectangles to verify rendering correctness.
+ *
+ * Features exercised:
+ *  - Infinite animation via Compose's [rememberInfiniteTransition]
+ *  - GPU-accelerated rotation via [graphicsLayer]
+ *  - Drop shadows (tests Skia's stencil buffer usage)
+ *  - Checkerboard background (makes stale pixels / smearing obvious)
+ */
 @Composable
 fun App() {
-    // Continuously rotating rectangles to verify rendering correctness.
-    // Uses Compose's animation system (InfiniteTransition) for smooth rotation,
-    // and graphicsLayer for GPU-accelerated transforms.
-
     val infiniteTransition = rememberInfiniteTransition()
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -45,7 +41,7 @@ fun App() {
             .fillMaxSize()
             .background(Color.White),
     ) {
-        // Draw a checkerboard grid
+        // Checkerboard background — makes stale pixels very obvious
         val tileSize = 40.dp
         Column(Modifier.fillMaxSize()) {
             var rowIndex = 0
@@ -105,60 +101,3 @@ fun App() {
         }
     }
 }
-
-@Composable
-fun App1() {
-    Column(Modifier.fillMaxSize().background(Color.Cyan).border(5.dp, Color.Magenta)) {
-        var text by remember { mutableStateOf("Text") }
-        val listState = rememberLazyListState()
-
-        Column(Modifier.width(400.dp)) {
-            TextField(text, { text = it }, modifier = Modifier.fillMaxWidth())
-            Button({}) {
-                Text("Hello!")
-            }
-            Row {
-                LazyColumn(state = listState, modifier = Modifier.weight(1f).fillMaxHeight()) {
-                    items(100) {
-                        Text("Item $it")
-                    }
-                }
-                VerticalScrollbar(
-                    rememberScrollbarAdapter(listState),
-                    modifier = Modifier.fillMaxHeight()
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun RootContainer(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit,
-) {
-    // Todo - this is a temporary fix. Adding a border fixes graphics glitch
-    val windowInfo = LocalWindowInfo.current
-    val containerSize = windowInfo.containerSize
-    val windowFocused = windowInfo.isWindowFocused
-
-    LaunchedEffect(containerSize, windowFocused) {
-        NodeLogger.group("RootContainer.LaunchedEffect")
-        NodeLogger.log("Container size: $containerSize")
-        NodeLogger.log("Window focused: $windowFocused")
-        NodeLogger.popGroup()
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .border(Dp.Hairline, Color.White.copy(0.01f))
-    ) {
-        content()
-    }
-}
-
-
-
-
-

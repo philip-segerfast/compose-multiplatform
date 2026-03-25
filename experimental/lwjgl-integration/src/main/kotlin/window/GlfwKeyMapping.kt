@@ -1,6 +1,14 @@
+package window
+
 import org.lwjgl.glfw.GLFW.*
 import java.awt.event.KeyEvent
 
+/**
+ * Maps GLFW key codes to AWT key codes.
+ *
+ * Compose's key event system is built on AWT key codes internally, so we need
+ * this translation layer when bridging GLFW keyboard input to Compose.
+ */
 fun glfwToAwtKeyCode(glfwKeyCode: Int): Int = when (glfwKeyCode) {
     GLFW_KEY_SPACE -> KeyEvent.VK_SPACE
     GLFW_KEY_APOSTROPHE -> KeyEvent.VK_QUOTE
