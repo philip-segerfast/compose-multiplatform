@@ -60,7 +60,7 @@ fun ComposeScene.subscribeToGLFWEvents(windowHandle: Long, densityProvider: () -
             eventType = PointerEventType.Scroll,
             position = glfwGetCursorPos(windowHandle, densityProvider()),
             scrollDelta = Offset(xoffset.toFloat(), -yoffset.toFloat()),
-            nativeEvent = MouseWheelEvent(getAwtMods(windowHandle)),
+            nativeEvent = MouseWheelEvent(getAwtMods(windowHandle), yoffset),
         )
     }
 
@@ -136,9 +136,32 @@ private fun MouseEvent(awtMods: Int) = MouseEvent(
     awtComponent, 0, 0, awtMods, 0, 0, 1, false,
 )
 
-private fun MouseWheelEvent(awtMods: Int) = MouseWheelEvent(
-    awtComponent, 0, 0, awtMods, 0, 0, 1, false,
-    MouseWheelEvent.WHEEL_UNIT_SCROLL, 3, 1,
+/**
+ * Creates an AWT [MouseWheelEvent] with correct metadata for Compose's scroll system.
+ *
+ * Key fields:
+ *  - **scrollAmount = 1** — Compose on macOS multiplies delta by `10.dp * scrollAmount`,
+ *    and GLFW already provides OS-accelerated deltas, so no extra multiplier needed.
+ *  - **wheelRotation = 0, preciseWheelRotation = [yoffset]** — Compose uses the
+ *    heuristic `abs(preciseWheelRotation - wheelRotation) > 0.001` to detect
+ *    trackpad/smooth scrolling. When detected, deltas are applied immediately
+ *    instead of being animated through a 100ms tween (which feels "clunky").
+ */
+private fun MouseWheelEvent(awtMods: Int, yoffset: Double) = MouseWheelEvent(
+    /* source              */ awtComponent,
+    /* id                  */ MouseWheelEvent.MOUSE_WHEEL,
+    /* when                */ System.currentTimeMillis(),
+    /* modifiers           */ awtMods,
+    /* x                   */ 0,
+    /* y                   */ 0,
+    /* xAbs                */ 0,
+    /* yAbs                */ 0,
+    /* clickCount          */ 0,
+    /* popupTrigger        */ false,
+    /* scrollType          */ MouseWheelEvent.WHEEL_UNIT_SCROLL,
+    /* scrollAmount        */ 1,
+    /* wheelRotation       */ 0,
+    /* preciseWheelRotation*/ yoffset,
 )
 
 private fun getAwtMods(windowHandle: Long): Int {
