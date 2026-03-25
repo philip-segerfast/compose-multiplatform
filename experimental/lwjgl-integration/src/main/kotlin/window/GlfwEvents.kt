@@ -123,6 +123,12 @@ private fun KeyEvent(
         AwtKeyEvent.KEY_RELEASED -> KeyEventType.KeyUp
         else -> KeyEventType.Unknown
     },
+    // Compose reads modifier state from these booleans — NOT from the AWT
+    // nativeEvent — so we must pass them explicitly.
+    isCtrlPressed = (awtMods and InputEvent.CTRL_DOWN_MASK) != 0,
+    isMetaPressed = (awtMods and InputEvent.META_DOWN_MASK) != 0,
+    isAltPressed = (awtMods and InputEvent.ALT_DOWN_MASK) != 0,
+    isShiftPressed = (awtMods and InputEvent.SHIFT_DOWN_MASK) != 0,
     nativeEvent = AwtKeyEvent(awtComponent, awtId, time, awtMods, key, char, location),
 )
 
@@ -156,5 +162,8 @@ private fun getAwtMods(windowHandle: Long): Int {
     if (glfwGetKey(windowHandle, GLFW_KEY_LEFT_ALT) == GLFW_PRESS ||
         glfwGetKey(windowHandle, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
         mods = mods or InputEvent.ALT_DOWN_MASK
+    if (glfwGetKey(windowHandle, GLFW_KEY_LEFT_SUPER) == GLFW_PRESS ||
+        glfwGetKey(windowHandle, GLFW_KEY_RIGHT_SUPER) == GLFW_PRESS)
+        mods = mods or InputEvent.META_DOWN_MASK
     return mods
 }

@@ -117,5 +117,8 @@ fun glfwToAwtKeyCode(glfwKeyCode: Int): Int = when (glfwKeyCode) {
     GLFW_KEY_RIGHT_SHIFT -> KeyEvent.VK_SHIFT
     GLFW_KEY_RIGHT_CONTROL -> KeyEvent.VK_CONTROL
     GLFW_KEY_RIGHT_ALT -> KeyEvent.VK_ALT
+    GLFW_KEY_LEFT_SUPER -> KeyEvent.VK_META
+    GLFW_KEY_RIGHT_SUPER -> KeyEvent.VK_META
+    GLFW_KEY_MENU -> KeyEvent.VK_CONTEXT_MENU
     else -> KeyEvent.VK_UNDEFINED
 }
