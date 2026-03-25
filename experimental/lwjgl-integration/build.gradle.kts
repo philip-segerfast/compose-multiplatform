@@ -113,6 +113,10 @@ compose.desktop {
     application {
         mainClass = "MainKt"
 
+        if (os == "macos") {
+            jvmArgs += listOf("-XstartOnFirstThread")
+        }
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "KotlinJvmComposeDesktopApplication"
