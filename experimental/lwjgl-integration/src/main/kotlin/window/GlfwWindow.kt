@@ -85,9 +85,20 @@ class GlfwWindow(
         // -- Create the Compose renderer --
         val renderer = ComposeRenderer(width, height, density)
         val dispatcher = GlfwCoroutineDispatcher()
-        val frameDispatcher = renderer.createScene(dispatcher) {
-            glfwSwapBuffers(windowHandle)
-        }
+
+        // Magenta background to verify transparency.
+        // In the real Minecraft mod, the game world would already be rendered
+        // to the default framebuffer, and we'd leave clearColor as null.
+        // Any area of the Compose UI that is transparent will show this color.
+        val backgroundClearColor = floatArrayOf(0.8f, 0.2f, 0.6f, 1f)
+
+        val frameDispatcher = renderer.createScene(
+            coroutineContext = dispatcher,
+            clearColor = backgroundClearColor,
+            onFrameRendered = {
+                glfwSwapBuffers(windowHandle)
+            },
+        )
 
         // -- Wire up GLFW callbacks --
         glfwSetWindowCloseCallback(windowHandle) { dispatcher.stop() }
@@ -106,7 +117,7 @@ class GlfwWindow(
             // Render immediately during resize to avoid visual lag.
             // Temporarily disable V-sync so the render isn't throttled.
             glfwSwapInterval(0)
-            renderer.render()
+            renderer.render(clearColor = backgroundClearColor)
             glfwSwapBuffers(windowHandle)
             glfwSwapInterval(1)
         }

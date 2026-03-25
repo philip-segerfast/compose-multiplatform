@@ -48,7 +48,7 @@ fun App() {
         var selectedTab by remember { mutableStateOf(0) }
         val tabs = listOf("Mouse", "Keyboard", "Widgets", "Animation")
 
-        Column(Modifier.fillMaxSize().background(MaterialTheme.colors.background)) {
+        Column(Modifier.fillMaxSize().background(MaterialTheme.colors.background.copy(alpha = 0.85f))) {
             // Tab row
             TabRow(selectedTabIndex = selectedTab) {
                 tabs.forEachIndexed { index, title ->

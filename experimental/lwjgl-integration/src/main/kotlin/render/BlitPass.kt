@@ -84,15 +84,21 @@ class BlitPass {
      * This method:
      *  1. Binds the default framebuffer and sets the viewport
      *  2. Restores GL state that Skia may have changed (scissor, stencil, depth, blend)
-     *  3. Draws a fullscreen textured quad
-     *
-     * The fullscreen quad covers every pixel, so no glClear is needed.
+     *  3. Clears the framebuffer with [clearColor] (simulates game world background)
+     *  4. Draws a fullscreen textured quad with premultiplied alpha blending
      *
      * @param textureId       the color texture to sample (typically [FramebufferObject.colorTextureId])
      * @param viewportWidth   framebuffer width in pixels
      * @param viewportHeight  framebuffer height in pixels
+     * @param clearColor      RGBA clear color for the background (null = don't clear,
+     *                        used when blitting on top of existing content like a game world)
      */
-    fun blit(textureId: Int, viewportWidth: Int, viewportHeight: Int) {
+    fun blit(
+        textureId: Int,
+        viewportWidth: Int,
+        viewportHeight: Int,
+        clearColor: FloatArray? = null,
+    ) {
         // -- Restore GL state for blitting --
         // Skia leaves GL state dirty after rendering. We reset only the
         // specific states our blit pass depends on.
@@ -101,8 +107,23 @@ class BlitPass {
         glDisable(GL_SCISSOR_TEST)
         glDisable(GL_STENCIL_TEST)
         glDisable(GL_DEPTH_TEST)
+
+        // -- Clear the background if requested --
+        if (clearColor != null) {
+            glDisable(GL_BLEND)
+            glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3])
+            glClear(GL_COLOR_BUFFER_BIT)
+        }
+
+        // -- Composite the UI overlay --
         glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        // Skia renders with premultiplied alpha — the RGB channels are already
+        // multiplied by A in the texture. Using GL_SRC_ALPHA here would multiply
+        // by alpha a second time, making semi-transparent pixels too dark.
+        //
+        //   result = src * ONE + dst * (1 - srcAlpha)
+        //          = premultiplied_color + background * transparency
+        glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 
         // -- Draw the fullscreen quad --
         glUseProgram(programId)

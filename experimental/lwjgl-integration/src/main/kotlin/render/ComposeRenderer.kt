@@ -94,16 +94,27 @@ class ComposeRenderer(
      *
      * @param coroutineContext the dispatcher on which Compose will run
      *        (typically a [window.GlfwCoroutineDispatcher])
+     * @param clearColor RGBA clear color for the background behind the Compose
+     *        overlay. Pass this for standalone usage where there is no pre-rendered
+     *        background (e.g. the test harness). For the Minecraft mod use case,
+     *        leave null and use [onBeforeBlit] instead.
+     * @param onBeforeBlit called after the Compose scene is rendered into the FBO
+     *        but before the FBO is blitted to the screen. Use this to draw
+     *        "background" content (e.g. the game world) that should appear behind
+     *        the transparent Compose overlay. Runs *before* the clearColor clear,
+     *        so clearColor takes precedence if both are provided.
      * @param onFrameRendered called after each [render] completes, typically
      *        used to swap buffers (e.g. `glfwSwapBuffers`)
      * @return a [FrameDispatcher] that should be used to schedule frames
      */
     fun createScene(
         coroutineContext: CoroutineContext,
+        clearColor: FloatArray? = null,
+        onBeforeBlit: () -> Unit = {},
         onFrameRendered: () -> Unit = {},
     ): FrameDispatcher {
         val frameDispatcher = FrameDispatcher(coroutineContext) {
-            render()
+            render(clearColor = clearColor, onBeforeBlit = onBeforeBlit)
             onFrameRendered()
         }
 
@@ -133,8 +144,14 @@ class ComposeRenderer(
      *
      * If the Compose scene hasn't been invalidated since the last render,
      * only the blit pass executes (reusing the cached FBO texture).
+     *
+     * @param clearColor RGBA clear color for the background behind the Compose
+     *        overlay, applied atomically inside the blit pass. Null = don't clear.
+     * @param onBeforeBlit called after the Compose FBO is ready but before
+     *        blitting it to the screen. Draw background content here (e.g. the
+     *        game world) so the transparent Compose overlay composites on top.
      */
-    fun render() {
+    fun render(clearColor: FloatArray? = null, onBeforeBlit: () -> Unit = {}) {
         val needsSceneRender = sceneDirty.getAndSet(false)
 
         if (needsSceneRender) {
@@ -156,7 +173,7 @@ class ComposeRenderer(
             // Step 2: Render Compose UI via Skia into the FBO.
             // The Surface is bound to our FBO via makeFromBackendRenderTarget —
             // Skia will bind the correct FBO itself.
-            surface.canvas.clear(Color.WHITE)
+            surface.canvas.clear(Color.TRANSPARENT)
             _scene.render(surface.canvas.asComposeCanvas(), System.nanoTime())
 
             // Step 3: Flush Skia's GPU command buffer without stalling the CPU.
@@ -166,8 +183,17 @@ class ComposeRenderer(
             context.submit(false)
         }
 
+        // Step 3.5: Let the caller draw background content to the default
+        // framebuffer before we composite the Compose overlay on top.
+        onBeforeBlit()
+
         // Step 4: Blit the FBO texture to the default framebuffer.
-        blitPass.blit(fbo.colorTextureId, width, height)
+        // Uses premultiplied alpha blending so transparent areas of the
+        // Compose UI let the background show through.
+        // When clearColor is provided, the blit pass clears the default
+        // framebuffer atomically before drawing the quad — this avoids
+        // flicker caused by a gap between clear and draw.
+        blitPass.blit(fbo.colorTextureId, width, height, clearColor)
     }
 
     /**
