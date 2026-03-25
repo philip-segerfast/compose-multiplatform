@@ -203,41 +203,54 @@ object Application {
         surface: Surface,
         context: DirectContext,
         shaderProgram: Int,
-    ): Unit = NodeLogger.withGroup("render(surface=$surface, context=$context, shaderProgram=$shaderProgram)") {
-        log("")
+    ) {
         renderCount++
-        if(renderCount % 100 == 0) {
-            log("[${renderCount}] Rendering x100")
-        }
 
-        // --- 1. Bind our main FBO and prepare the GL state ---
-        bindFramebuffer(GL_FRAMEBUFFER, composeFbo.fboId)
-        glClearColor(1f, 1f, 1f, 1f)
-        glClearStencil(0)
-        glClear(GL_COLOR_BUFFER_BIT or GL_STENCIL_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
+        // --- 1. Tell Skia to discard ALL cached GL state ---
+        // Skia caches which FBO/texture/program/VAO/blend state is bound.
+        // Since we modify GL state outside Skia, we must tell it
+        // everything is dirty BEFORE we ask it to render.
+        context.resetGLAll()
 
-        // --- 2. Tell Skia to reset its internal state cache ---
-        // This is the definitive fix. It forces Skia to re-sync with the
-        // OpenGL state you just set up, ensuring its text rendering
-        // pipeline doesn't use stale, cached information.
-        context.resetGL(GLBackendState.TEXTURE_BINDING)
-
-        // --- 3. Render Compose UI via Skia ---
+        // --- 2. Render Compose UI via Skia into the FBO ---
+        // The Surface is bound to our FBO via makeFromBackendRenderTarget.
+        // Skia will bind the correct FBO itself — we must NOT bind/clear
+        // it manually, because Skia tracks that state internally.
         surface.canvas.clear(Color.WHITE)
         composeScene.render(surface.canvas.asComposeCanvas(), System.nanoTime())
-        context.flush()
 
-        // --- 4. Render the FBO's texture to the screen ---
-        bindFramebuffer(GL_FRAMEBUFFER, 0)
-        useProgram(shaderProgram)
-        bindVertexArray(composeFbo.quadVaoId)
+        // Flush all Skia GPU commands and wait for completion.
+        // flushAndSubmit with syncCpu=true ensures all GPU work is done
+        // before we read from the FBO texture for blitting.
+        context.flushAndSubmit(surface, syncCpu = true)
+
+        // --- 3. Reset GL state after Skia ---
+        // Skia leaves GL state dirty (bound programs, VAOs, textures,
+        // blend modes, FBOs, etc.). We must restore everything we need.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glViewport(0, 0, windowWidth, windowHeight)
+        glDisable(GL_SCISSOR_TEST)
+        glDisable(GL_STENCIL_TEST)
+        glDisable(GL_DEPTH_TEST)
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+        glUseProgram(0)
+        glBindVertexArray(0)
+
+        // --- 4. Clear the default framebuffer ---
+        glClearColor(0f, 0f, 0f, 1f)
+        glClear(GL_COLOR_BUFFER_BIT)
+
+        // --- 5. Blit the FBO texture to the screen quad ---
+        glUseProgram(shaderProgram)
+        glBindVertexArray(composeFbo.quadVaoId)
         glActiveTexture(GL_TEXTURE0)
-        bindTexture(GL_TEXTURE_2D, composeFbo.colorTextureId)
+        glBindTexture(GL_TEXTURE_2D, composeFbo.colorTextureId)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0)
 
-        // --- 5. Clean up state ---
-        bindVertexArray(0)
-        useProgram(0)
+        // --- 6. Clean up ---
+        glBindVertexArray(0)
+        glUseProgram(0)
 
         glfwSwapBuffers(windowHandle)
     }

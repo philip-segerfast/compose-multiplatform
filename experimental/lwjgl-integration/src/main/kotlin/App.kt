@@ -1,6 +1,4 @@
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,87 +13,95 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun App() {
-    // This composable is unused for now.
+    // Continuously rotating rectangles to verify rendering correctness.
+    // Uses Compose's animation system (InfiniteTransition) for smooth rotation,
+    // and graphicsLayer for GPU-accelerated transforms.
 
-    var num by remember { mutableStateOf(0) }
-    var rotationTarget by remember { mutableStateOf(0f) }
-    val animatedRotation by animateFloatAsState(
-        targetValue = rotationTarget,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = 1f,
+    val infiniteTransition = rememberInfiniteTransition()
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
         ),
     )
 
-    LaunchedEffect(Unit) {
-        launch {
-            while(true) {
-                rotationTarget = 360f
-                delay(4.seconds)
-                rotationTarget = 0f
-                delay(4.seconds)
-            }
-        }
-        launch {
-            while(true) {
-                delay(1.seconds)
-                num++
-            }
-        }
-    }
+    val shape = RoundedCornerShape(12.dp)
 
+    // Checkerboard background — makes stale pixels very obvious
     Box(
         Modifier
             .fillMaxSize()
-            .background(Color.Blue.copy(0.3f))
-//            .border(5.dp, Color.Green)
-            .padding(8.dp)
-            .focusable()
-            .onKeyEvent { event ->
-                when(event.key) {
-                    Key.DirectionLeft -> {
-                        println("LEFT")
-                        rotationTarget -= 1
-                        true
+            .background(Color.White),
+    ) {
+        // Draw a checkerboard grid
+        val tileSize = 40.dp
+        Column(Modifier.fillMaxSize()) {
+            var rowIndex = 0
+            repeat(20) {
+                Row(Modifier.fillMaxWidth()) {
+                    repeat(20) { colIndex ->
+                        val isDark = (rowIndex + colIndex) % 2 == 0
+                        Box(
+                            Modifier
+                                .size(tileSize)
+                                .background(if (isDark) Color.LightGray else Color.White)
+                        )
                     }
-                    Key.DirectionRight -> {
-                        println("RIGHT")
-                        rotationTarget += 1
-                        true
-                    }
-                    else -> false
+                }
+                rowIndex++
+            }
+        }
+
+        // Two columns side by side for comparison
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // LEFT: No shadow
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("No shadow", color = Color.Black)
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    Modifier
+                        .graphicsLayer { rotationZ = rotation }
+                        .size(width = 60.dp, height = 180.dp)
+                        .background(Color.Red, shape)
+                        .border(3.dp, Color.Black, shape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("${rotation.toInt()}°", color = Color.White)
                 }
             }
-        ,
-        contentAlignment = Alignment.Center
-    ) {
-        val shape = RoundedCornerShape(16.dp)
-         Box(
-             Modifier
-                 .rotate(animatedRotation)
-                 .size(200.dp)
-                 .shadow(10.dp, shape)
-                 .background(Color.Red, shape)
-                 .border(8.dp, Color.Blue, shape)
-             ,
-             contentAlignment = Alignment.Center,
-         ) {
-             Text(num.toString())
-         }
+
+            // RIGHT: With shadow
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("With shadow", color = Color.Black)
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    Modifier
+                        .graphicsLayer { rotationZ = rotation }
+                        .size(width = 60.dp, height = 180.dp)
+                        .shadow(12.dp, shape)
+                        .background(Color.Blue, shape)
+                        .border(3.dp, Color.Black, shape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("${rotation.toInt()}°", color = Color.White)
+                }
+            }
+        }
     }
 }
 
