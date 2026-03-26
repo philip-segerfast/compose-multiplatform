@@ -16,12 +16,19 @@ object ShaderProgram {
      * Compiles a vertex + fragment shader from classpath resource paths and links
      * them into a shader program.
      *
-     * @param vertexPath   classpath resource path, e.g. "/assets/shaders/ui_quad.vert"
-     * @param fragmentPath classpath resource path, e.g. "/assets/shaders/ui_quad.frag"
+     * @param vertexPath      classpath resource path, e.g. "/assets/shaders/ui_quad.vert"
+     * @param fragmentPath    classpath resource path, e.g. "/assets/shaders/ui_quad.frag"
+     * @param attribBindings  optional map of attribute name → location index, bound
+     *                        via [glBindAttribLocation] before linking. Required for
+     *                        GLSL 1.50 shaders which don't support `layout(location = N)`.
      * @return the linked program ID
      * @throws RuntimeException if a shader fails to compile or the program fails to link
      */
-    fun fromResources(vertexPath: String, fragmentPath: String): Int {
+    fun fromResources(
+        vertexPath: String,
+        fragmentPath: String,
+        attribBindings: Map<String, Int> = emptyMap(),
+    ): Int {
         val vertexSource = readResource(vertexPath)
         val fragmentSource = readResource(fragmentPath)
 
@@ -31,6 +38,13 @@ object ShaderProgram {
         val programId = glCreateProgram()
         glAttachShader(programId, vertexId)
         glAttachShader(programId, fragmentId)
+
+        // Bind attribute locations before linking (required for GLSL 1.50 which
+        // doesn't support layout(location = N) qualifiers)
+        for ((name, location) in attribBindings) {
+            glBindAttribLocation(programId, location, name)
+        }
+
         glLinkProgram(programId)
         checkLinkStatus(programId)
 

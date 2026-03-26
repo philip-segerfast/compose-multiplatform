@@ -98,6 +98,7 @@ class GlfwWindow(
             onFrameRendered = {
                 glfwSwapBuffers(windowHandle)
             },
+            platformContext = GlfwPlatformContext(windowHandle),
         )
 
         // -- Wire up GLFW callbacks --

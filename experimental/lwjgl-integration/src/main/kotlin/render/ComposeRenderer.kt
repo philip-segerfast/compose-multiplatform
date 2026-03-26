@@ -105,6 +105,9 @@ class ComposeRenderer(
      *        so clearColor takes precedence if both are provided.
      * @param onFrameRendered called after each [render] completes, typically
      *        used to swap buffers (e.g. `glfwSwapBuffers`)
+     * @param platformContext the platform integration layer providing clipboard,
+     *        cursor icon, and other platform services. Defaults to [PlatformContext.Empty]
+     *        which has no clipboard or cursor support.
      * @return a [FrameDispatcher] that should be used to schedule frames
      */
     fun createScene(
@@ -112,6 +115,7 @@ class ComposeRenderer(
         clearColor: FloatArray? = null,
         onBeforeBlit: () -> Unit = {},
         onFrameRendered: () -> Unit = {},
+        platformContext: PlatformContext = PlatformContext.Empty,
     ): FrameDispatcher {
         val frameDispatcher = FrameDispatcher(coroutineContext) {
             render(clearColor = clearColor, onBeforeBlit = onBeforeBlit)
@@ -126,7 +130,7 @@ class ComposeRenderer(
                 sceneDirty.set(true)
                 frameDispatcher.scheduleFrame()
             },
-            platformContext = PlatformContext.Empty,
+            platformContext = platformContext,
         )
 
         return frameDispatcher

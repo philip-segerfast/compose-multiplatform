@@ -26,6 +26,10 @@ class BlitPass {
         programId = ShaderProgram.fromResources(
             vertexPath = "/assets/shaders/ui_quad.vert",
             fragmentPath = "/assets/shaders/ui_quad.frag",
+            attribBindings = mapOf(
+                "aPos" to 0,
+                "aTexCoords" to 1,
+            ),
         )
 
         // -- Create fullscreen quad VAO --
@@ -79,10 +83,10 @@ class BlitPass {
     }
 
     /**
-     * Blits the given texture onto the default framebuffer.
+     * Blits the given texture onto the target framebuffer.
      *
      * This method:
-     *  1. Binds the default framebuffer and sets the viewport
+     *  1. Binds the target framebuffer (default = 0, the screen) and sets the viewport
      *  2. Restores GL state that Skia may have changed (scissor, stencil, depth, blend)
      *  3. Clears the framebuffer with [clearColor] (simulates game world background)
      *  4. Draws a fullscreen textured quad with premultiplied alpha blending
@@ -92,17 +96,21 @@ class BlitPass {
      * @param viewportHeight  framebuffer height in pixels
      * @param clearColor      RGBA clear color for the background (null = don't clear,
      *                        used when blitting on top of existing content like a game world)
+     * @param targetFboId     the framebuffer to blit onto. Defaults to 0 (the default
+     *                        framebuffer / screen). In Minecraft 1.17+, the game renders
+     *                        to a managed [RenderTarget], so this must be set to its FBO ID.
      */
     fun blit(
         textureId: Int,
         viewportWidth: Int,
         viewportHeight: Int,
         clearColor: FloatArray? = null,
+        targetFboId: Int = 0,
     ) {
         // -- Restore GL state for blitting --
         // Skia leaves GL state dirty after rendering. We reset only the
         // specific states our blit pass depends on.
-        glBindFramebuffer(GL_FRAMEBUFFER, 0)
+        glBindFramebuffer(GL_FRAMEBUFFER, targetFboId)
         glViewport(0, 0, viewportWidth, viewportHeight)
         glDisable(GL_SCISSOR_TEST)
         glDisable(GL_STENCIL_TEST)
